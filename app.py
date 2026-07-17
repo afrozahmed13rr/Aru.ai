@@ -7,23 +7,20 @@ html_content = """
 <!DOCTYPE html>
 <html>
 <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <style>
-        body { font-family: sans-serif; background-color: #fff; margin: 0; display: flex; justify-content: center; }
-        .header { position: fixed; top: 0; width: 100%; max-width: 400px; background-color: #fafafa; border-bottom: 1px solid #dbdbdb; display: flex; align-items: center; padding: 10px 15px; }
-        .header img { width: 40px; height: 40px; border-radius: 50%; margin-right: 10px; border: 2px solid #ff8a8a; }
-        #chat { padding-top: 70px; padding-bottom: 80px; width: 100%; max-width: 400px; }
-        .message { margin: 10px 15px; padding: 10px 15px; border-radius: 20px; font-size: 14px; max-width: 70%; }
-        .aru-message { background-color: #efefef; align-self: flex-start; }
-        .user-message { background: #007bff; color: #fff; align-self: flex-end; margin-left: auto; }
-        .input-area { position: fixed; bottom: 0; width: 100%; max-width: 400px; background-color: #fff; border-top: 1px solid #dbdbdb; padding: 10px; display: flex; }
-        input { flex-grow: 1; padding: 10px; border-radius: 20px; border: 1px solid #dbdbdb; outline: none; }
-        button { background: none; border: none; color: #0095f6; font-weight: bold; margin-left: 10px; cursor: pointer; }
+        body { font-family: -apple-system, sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; background: #fff; }
+        .header { display: flex; align-items: center; padding: 10px; border-bottom: 1px solid #eee; }
+        .header img { width: 40px; height: 40px; border-radius: 50%; margin-right: 10px; }
+        #chat { flex: 1; overflow-y: auto; padding: 10px; }
+        .input-area { display: flex; padding: 10px; border-top: 1px solid #eee; background: #fff; }
+        input { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 20px; outline: none; }
+        button { margin-left: 10px; border: none; background: none; color: #0095f6; font-weight: bold; }
     </style>
 </head>
 <body>
     <div class="header">
-        <img src="https://i.imgur.com/8KQ383X.png" alt="Aru">
+        <img src="https://cdn-icons-png.flaticon.com/512/3069/3069176.png" alt="Aru">
         <h2>Aru.ai</h2>
     </div>
     <div id="chat"></div>
@@ -36,8 +33,7 @@ html_content = """
             const input = document.getElementById('userInput');
             const chat = document.getElementById('chat');
             if (input.value.trim() !== "") {
-                chat.innerHTML += '<div class="message user-message">' + input.value + '</div>';
-                chat.innerHTML += '<div class="message aru-message">Aru abhi online ho rahi hai... ✨</div>';
+                chat.innerHTML += '<div style="margin:5px; text-align:right;">' + input.value + '</div>';
                 input.value = '';
                 chat.scrollTop = chat.scrollHeight;
             }
