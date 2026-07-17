@@ -1,29 +1,31 @@
-from fastapi import FastAPI
-from pydantic import BaseModel
-from main import AruBrain
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI, Request
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
 
 app = FastAPI()
 
-# Web interface se connect karne ke liye CORS zaroori hai
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# HTML chat interface
+html_content = """
+<!DOCTYPE html>
+<html>
+<head><title>Aru AI</title></head>
+<body>
+    <h1>Hi, I'm Aru! 🤖</h1>
+    <div id="chat"></div>
+    <input type="text" id="userInput" placeholder="Kuch bolo...">
+    <button onclick="sendMessage()">Send</button>
 
-aru = AruBrain()
-
-class ChatRequest(BaseModel):
-    message: str
+    <script>
+        function sendMessage() {
+            const input = document.getElementById('userInput').value;
+            document.getElementById('chat').innerHTML += '<p>You: ' + input + '</p>';
+            // Yahan aage AI ka logic connect karenge
+        }
+    </script>
+</body>
+</html>
+"""
 
 @app.get("/")
-def read_root():
-    return {"message": "Aru AI Server is Online!"}
-
-@app.post("/chat")
-async def chat(req: ChatRequest):
-    # Process cognition ka result return karega
-    reply = aru.process_cognition(req.message)
-    return {"reply": reply}
+async def get():
+    return HTMLResponse(content=html_content)
