@@ -8,7 +8,7 @@ html_content = """
 <!DOCTYPE html>
 <html>
 <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         body { font-family: sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; background: #fff; }
         .header { display: flex; align-items: center; padding: 15px; border-bottom: 1px solid #eee; }
@@ -36,13 +36,14 @@ html_content = """
         async function sendMessage() {
             let input = document.getElementById('userInput');
             let chat = document.getElementById('chat');
-            if (input.value.trim() === "") return;
+            let text = input.value.trim();
+            if (text === "") return;
             
-            chat.innerHTML += '<div class="msg user">' + input.value + '</div>';
-            let msg = input.value;
+            chat.innerHTML += '<div class="msg user">' + text + '</div>';
             input.value = '';
+            chat.scrollTop = chat.scrollHeight;
             
-            let res = await fetch('/get_reply?msg=' + encodeURIComponent(msg));
+            let res = await fetch('/get_reply?msg=' + encodeURIComponent(text));
             let data = await res.json();
             
             chat.innerHTML += '<div class="msg bot">' + data.reply + '</div>';
@@ -60,10 +61,11 @@ async def get():
 @app.get("/get_reply")
 async def get_reply(msg: str):
     try:
+        # G4F se AI response mang rahe hain
         response = g4f.ChatCompletion.create(
-            model="gpt-3.5-turbo",
+            model="gpt-4o",
             messages=[{"role": "user", "content": msg}],
         )
         return {"reply": response}
     except Exception as e:
-        return {"reply": "Main abhi thoda busy hoon, please thodi der baad puchna! ✨"}
+        return {"reply": "Aru abhi connect nahi ho pa rahi... Check logs!"}
