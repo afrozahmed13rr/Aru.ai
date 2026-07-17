@@ -1,4 +1,4 @@
 fastapi
 uvicorn
 g4f
-cryptography
+python-multipart
