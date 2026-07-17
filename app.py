@@ -1,74 +1,83 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Form, Request
 from fastapi.responses import HTMLResponse
 import g4f
+import sqlite3
 
 app = FastAPI()
 
-html_content = """
-<!DOCTYPE html>
-<html>
-<head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>
-        body { font-family: sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; background: #fff; }
-        .header { display: flex; align-items: center; padding: 15px; border-bottom: 1px solid #eee; }
-        .header img { width: 40px; height: 40px; margin-right: 12px; }
-        #chat { flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; }
-        .msg { padding: 12px 16px; margin: 6px 0; border-radius: 18px; max-width: 75%; font-size: 15px; }
-        .user { align-self: flex-end; background: #007bff; color: white; border-bottom-right-radius: 4px; }
-        .bot { align-self: flex-start; background: #f1f0f0; color: black; border-bottom-left-radius: 4px; }
-        .input-area { display: flex; padding: 15px; background: #fff; border-top: 1px solid #eee; position: sticky; bottom: 0; }
-        input { flex: 1; padding: 14px; border: 1px solid #ddd; border-radius: 25px; outline: none; }
-        button { padding: 12px 20px; border: none; background: #007bff; color: white; border-radius: 25px; margin-left: 10px; cursor: pointer; }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <img src="https://cdn-icons-png.flaticon.com/512/3069/3069176.png" alt="Aru">
-        <h2>Aru.ai</h2>
-    </div>
-    <div id="chat"></div>
-    <div class="input-area">
-        <input type="text" id="userInput" placeholder="Message...">
-        <button onclick="sendMessage()">Send</button>
-    </div>
-    <script>
-        async function sendMessage() {
-            let input = document.getElementById('userInput');
-            let chat = document.getElementById('chat');
-            let text = input.value.trim();
-            if (text === "") return;
-            
-            chat.innerHTML += '<div class="msg user">' + text + '</div>';
-            input.value = '';
-            chat.scrollTop = chat.scrollHeight;
-            
-            let res = await fetch('/get_reply?msg=' + encodeURIComponent(text));
-            let data = await res.json();
-            
-            chat.innerHTML += '<div class="msg bot">' + data.reply + '</div>';
-            chat.scrollTop = chat.scrollHeight;
-        }
-    </script>
-</body>
-</html>
-"""
+# Database setup
+def init_db():
+    conn = sqlite3.connect("aru_data.db")
+    cursor = conn.cursor()
+    cursor.execute("CREATE TABLE IF NOT EXISTS history (user TEXT, chat TEXT)")
+    conn.commit()
+    conn.close()
 
-@app.get("/")
+init_db()
+
+@app.get("/", response_class=HTMLResponse)
 async def get():
-    return HTMLResponse(content=html_content)
+    return """
+    <html>
+    <head><meta name="viewport" content="width=device-width, initial-scale=1.0"><style>
+    body{font-family:sans-serif; text-align:center; padding-top:50px;}
+    input{padding:10px; border-radius:10px; border:1px solid #ccc; width:80%;}
+    button{padding:10px 20px; background:#007bff; color:white; border:none; border-radius:10px; margin-top:10px;}
+    </style></head>
+    <body>
+        <h2>Login to Aru.ai</h2>
+        <form method="post" action="/chat">
+            <input type="text" name="username" placeholder="Apna naam likho..." required><br>
+            <button type="submit">Login</button>
+        </form>
+    </body></html>
+    """
+
+@app.post("/chat", response_class=HTMLResponse)
+async def chat_interface(username: str = Form(...)):
+    return f"""
+    <html><head><meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body{{font-family:sans-serif; margin:0; display:flex; flex-direction:column; height:100vh;}}
+        #chat{{flex:1; overflow-y:auto; padding:20px;}}
+        .msg{{padding:10px; margin:5px; border-radius:10px; background:#eee;}}
+        .input-area{{padding:20px; border-top:1px solid #ccc; display:flex;}}
+    </style></head>
+    <body>
+        <div id="chat"><p>Welcome {username}! Aru is ready.</p></div>
+        <div class="input-area">
+            <input type="text" id="msg" placeholder="Message...">
+            <button onclick="sendMsg('{username}')">Send</button>
+        </div>
+        <script>
+            async function sendMsg(user) {{
+                let m = document.getElementById('msg').value;
+                document.getElementById('chat').innerHTML += '<div class="msg">You: '+m+'</div>';
+                let res = await fetch('/get_reply?user='+user+'&msg='+encodeURIComponent(m));
+                let data = await res.json();
+                document.getElementById('chat').innerHTML += '<div class="msg">Aru: '+data.reply+'</div>';
+                document.getElementById('msg').value = '';
+            }}
+        </script>
+    </body></html>
+    """
 
 @app.get("/get_reply")
-async def get_reply(msg: str):
+async def get_reply(user: str, msg: str):
+    # Data save in SQLite
+    conn = sqlite3.connect("aru_data.db")
+    cursor = conn.cursor()
+    cursor.execute("INSERT INTO history VALUES (?, ?)", (user, msg))
+    conn.commit()
+    conn.close()
+    
+    # AI Logic
     try:
-        # System prompt set kar diya hai taaki wo smart bane, location ki baatein na kare
         response = g4f.ChatCompletion.create(
             model="gpt-4o",
-            messages=[
-                {"role": "system", "content": "Tum Aru ho, ek friendly AI assistant. Lititz ya kisi bhi location ke baare mein baat nahi karni hai. Sirf seedhe aur friendly jawab dene hain."},
-                {"role": "user", "content": msg}
-            ],
+            messages=[{"role": "system", "content": "You are Aru, a helpful friend. Keep responses short."},
+                      {"role": "user", "content": msg}]
         )
         return {"reply": response}
-    except Exception as e:
-        return {"reply": "Main abhi thoda confuse ho gayi hoon, phir se pucho! ✨"}
+    except:
+        return {"reply": "Aru abhi busy hai!"}
