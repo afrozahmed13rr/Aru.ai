@@ -61,11 +61,14 @@ async def get():
 @app.get("/get_reply")
 async def get_reply(msg: str):
     try:
-        # G4F se AI response mang rahe hain
+        # System prompt set kar diya hai taaki wo smart bane, location ki baatein na kare
         response = g4f.ChatCompletion.create(
             model="gpt-4o",
-            messages=[{"role": "user", "content": msg}],
+            messages=[
+                {"role": "system", "content": "Tum Aru ho, ek friendly AI assistant. Lititz ya kisi bhi location ke baare mein baat nahi karni hai. Sirf seedhe aur friendly jawab dene hain."},
+                {"role": "user", "content": msg}
+            ],
         )
         return {"reply": response}
     except Exception as e:
-        return {"reply": "Aru abhi connect nahi ho pa rahi... Check logs!"}
+        return {"reply": "Main abhi thoda confuse ho gayi hoon, phir se pucho! ✨"}
